@@ -1,51 +1,48 @@
-apply plugin: 'java-library'
-apply plugin: 'net.serenity-bdd.aggregator'
-
+plugins {
+    id 'java'
+    id 'net.serenity-bdd.serenity-gradle-plugin' version '4.2.34'
+    id 'org.sonarqube' version '7.6.0.18749'
+}
 
 repositories {
-    mavenLocal()
     mavenCentral()
-    jcenter()
 }
-
-buildscript {
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        jcenter()
-    }
-    dependencies {
-
-        classpath("net.serenity-bdd:serenity-gradle-plugin:2.0.80")
-    }
-}
-
 
 dependencies {
-
-    implementation 'net.serenity-bdd:serenity-junit:2.0.80'
-    implementation 'net.serenity-bdd:serenity-cucumber:1.9.45'
-    implementation 'net.serenity-bdd:serenity-core:2.0.80'
-    implementation 'org.slf4j:slf4j-simple:1.7.7'
-    implementation 'com.google.guava:guava:23.0'
-    implementation group: 'org.apache.poi', name: 'poi', version: '3.17'
-    implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '3.17'
-
-
-
-
+    testImplementation 'net.serenity-bdd:serenity-screenplay-webdriver:4.2.34'
+    testImplementation 'net.serenity-bdd:serenity-junit:4.2.34'
+    testImplementation 'net.serenity-bdd:serenity-cucumber:4.2.34'
+    testImplementation 'junit:junit:4.13.2'
+    testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.16'
 }
 
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(17) }
+}
+
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+
+sonar {
+    properties {
+        property 'sonar.projectKey', 'AndrewSarmiento1909_taller-automatizacion-datepicker'
+        property 'sonar.organization', 'andrewsarmiento1909'
+        property 'sonar.host.url', 'https://sonarcloud.io'
+        // Este repositorio contiene la automatización en src/test/java.
+        // Se analiza como código principal del proyecto de automatización.
+        property 'sonar.sources', 'src/test/java'
+        property 'sonar.tests', ''
+        property 'sonar.java.binaries', 'build/classes/java/test'
+        property 'sonar.java.libraries', configurations.testRuntimeClasspath.files.collect { it.absolutePath }.join(',')
+    }
+}
+tasks.named('sonar') { dependsOn tasks.named('testClasses') }
 
 test {
-
-    ignoreFailures = true
+    include '**/*Runner.class'
+    systemProperty 'webdriver.driver', project.findProperty('browser') ?: 'chrome'
+    systemProperty 'taller.viewport.movil', project.findProperty('movil') ?: 'false'
+    if (project.hasProperty('dia')) {
+        systemProperty 'taller.dia', project.property('dia').toString()
+    }
+    finalizedBy aggregate
 }
-
-
-tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
-}
-
-
-gradle.startParameter.continueOnFailure = true
